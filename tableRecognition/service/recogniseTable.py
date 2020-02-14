@@ -45,29 +45,29 @@ def recogniseTableFromImage(img_data):
     b = 0
     i = len(image_bin) - 1
     j = len(image_bin) - 1
-    while a == 0 and b == 0:
-        if image_bin[i][int(w/4)] == 255:
+    while a == 0 or b == 0:
+        if (w < 150) or(i <= 100 or j <= 100):
+            break
+        i -= 1
+        j -= 1
+        if image_bin[i][75] == 255 and a == 0:
             a = len(image_bin)-1 - i
-        else:
-            i -= 1
-        if image_bin[j][int(3*w/4)] == 255:
+        if image_bin[j][w-75] == 255 and b == 0:
             b = len(image_bin)-1 - j
-        else:
-            j -= 1
     print (a,b)
+    cv2.imwrite('cropedbin.jpg',image_bin)
     rotated = image_bin
-    if a!= 0 or b!=0:
+    if (a!= 0 or b!=0) and abs(a-b)>20:
         x1 = abs(a-b)
-        x2 = int(w/2)
+        x2 = w-150
         x3 = sqrt(x1*x1+x2*x2)
-        alpha = 2 * np.arctan((x1 * x1 - (x2 - x3) ** 2) / (x2 + x3) ** 2 - x1 ** 2)
-        if a>b:
+        alpha = 360 - 2 * np.arctan((x1 * x1 - (x2 - x3) ** 2) / (x2 + x3) ** 2 - x1 ** 2)
+        if b> a:
             alpha = 360 - alpha
-        M = cv2.getRotationMatrix2D((w/2,h/2), abs(int(alpha)), 1.0)
+        M = cv2.getRotationMatrix2D((w/2,h/2), int(alpha), 1.0)
         rotated = cv2.warpAffine(image_bin, M, (w, h))
 
-        cv2.imwrite('rot.jpg',rotated)
-    cv2.imwrite('cropedbin.jpg',image_bin)
+    cv2.imwrite('rot.jpg', rotated)
     return rotated
 
 
