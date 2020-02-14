@@ -55,16 +55,20 @@ def recogniseTableFromImage(img_data):
         else:
             j -= 1
     print (a,b)
+    rotated = image_bin
+    if a!= 0 or b!=0:
+        x1 = abs(a-b)
+        x2 = int(w/2)
+        x3 = sqrt(x1*x1+x2*x2)
+        alpha = 2 * np.arctan((x1 * x1 - (x2 - x3) ** 2) / (x2 + x3) ** 2 - x1 ** 2)
+        if a>b:
+            alpha = 360 - alpha
+        M = cv2.getRotationMatrix2D((w/2,h/2), abs(int(alpha)), 1.0)
+        rotated = cv2.warpAffine(image_bin, M, (w, h))
 
-    x1 = abs(a-b)
-    x2 = int(w/2)
-    x3 = sqrt(x1*x1+x2*x2)
-
-
-
+        cv2.imwrite('rot.jpg',rotated)
     cv2.imwrite('cropedbin.jpg',image_bin)
-
-    return image_bin
+    return rotated
 
 
 def convert_and_save(b64_string):
