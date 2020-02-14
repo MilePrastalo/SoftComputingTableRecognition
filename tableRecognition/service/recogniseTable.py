@@ -16,18 +16,17 @@ def recogniseTableFromImage(img_data):
     img2 = cv2.imread(name)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    ret, image_bin = cv2.threshold(img,110, 255, cv2.THRESH_BINARY_INV+ cv2.THRESH_OTSU)
+    image_bin = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 15, 5)
     cv2.imwrite('bin.jpg', image_bin)
     contoures, _ = cv2.findContours(image_bin, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     coordinates = []
     for cnt in contoures:
         x, y, w, h = cv2.boundingRect(cnt)
-        if w < 30 and h < 30:
-            continue
-        if w < 50:
+        if (w < 30 and h < 30) or (w < 75) or (h<10):
             continue
         coordinates.append((x, y, w, h))
         cv2.rectangle(img2, (x, y), (x + w, y + h), (0, 0, 255), 1)
+
     cv2.imwrite('detecttable.jpg', img2)
 
     filtered = hasCloseCounture(coordinates)
@@ -36,8 +35,36 @@ def recogniseTableFromImage(img_data):
     cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 1)
     crop_img = img[y:y + h, x:x + w]
     cv2.namedWindow('detecttable', cv2.WINDOW_NORMAL)
+
     cv2.imwrite('croped.jpg',crop_img)
-    return img
+
+
+    image_bin = cv2.adaptiveThreshold(crop_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 15, 5)
+
+    a = 0
+    b = 0
+    i = len(image_bin) - 1
+    j = len(image_bin) - 1
+    while a == 0 and b == 0:
+        if image_bin[i][int(w/4)] == 255:
+            a = len(image_bin)-1 - i
+        else:
+            i -= 1
+        if image_bin[j][int(3*w/4)] == 255:
+            b = len(image_bin)-1 - j
+        else:
+            j -= 1
+    print (a,b)
+
+    x1 = abs(a-b)
+    x2 = int(w/2)
+    x3 = sqrt(x1*x1+x2*x2)
+
+
+
+    cv2.imwrite('cropedbin.jpg',image_bin)
+
+    return image_bin
 
 
 def convert_and_save(b64_string):
