@@ -3,6 +3,7 @@ from flask import Flask
 
 import base64
 
+from service import parseTable
 from service.recogniseTable import recogniseTableFromImage
 from flask_cors import cross_origin
 import flask
@@ -24,6 +25,9 @@ def upload_image():
     picture = flask.request.get_json()
     pictureBase64 = picture['pictureData']
     table_image = recogniseTableFromImage(pictureBase64)
+
+    # parse cropped table
+    parseTable.parseTable(table_image)
 
 
 if __name__ == '__main__':
