@@ -3,10 +3,8 @@ import datetime
 from datetime import datetime
 import os
 from math import sqrt
-
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 from flask import current_app as app
 
 
@@ -18,9 +16,9 @@ def recogniseTableFromImage(img_data):
 
     image_bin = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 15, 5)
     cv2.imwrite('bin.jpg', image_bin)
-    contoures, _ = cv2.findContours(image_bin, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(image_bin, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     coordinates = []
-    for cnt in contoures:
+    for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
         if (w < 30 and h < 30) or (w < 75) or (h<10):
             continue
@@ -31,20 +29,17 @@ def recogniseTableFromImage(img_data):
 
     filtered = hasCloseCounture(coordinates)
     node = getMostChildren(filtered)
-    (x,y,w,h) = node
+    (x, y, w, h) = node
     cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 1)
     crop_img = img[y:y + h, x:x + w]
-    cv2.namedWindow('detecttable', cv2.WINDOW_NORMAL)
-
     cv2.imwrite('croped.jpg',crop_img)
-
 
     image_bin = cv2.adaptiveThreshold(crop_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 15, 5)
 
     a = 0
     b = 0
-    i = len(image_bin) - 1
-    j = len(image_bin) - 1
+    i = len(image_bin)
+    j = len(image_bin)
     while a == 0 or b == 0:
         if (w < 150) or(i <= 100 or j <= 100):
             break
