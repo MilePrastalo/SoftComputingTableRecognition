@@ -33,7 +33,7 @@ def parseTable(table_img):
     # A verticle kernel of (1 X kernel_length), which will detect all the verticle lines from the image.
     vertical_size = np.array(table_img).shape[1] // 30
     print("V size: ", vertical_size)
-    vertical_structure = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 17))
+    vertical_structure = cv2.getStructuringElement(cv2.MORPH_RECT, (1, vertical_size))
 
     # A kernel of (7 X 3) ones.
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (8, 4))
@@ -90,8 +90,8 @@ def parseTable(table_img):
 
         if (w > 200 and (h > 50 or h > average_h - 7)):
             idx += 1
-            # new_img = table_img[y:y + h, x:x + w]
-            # cv2.imwrite("cropped/" + str(idx) + '.png', new_img)
+            new_img = table_img[y:y + h, x:x + w]
+            cv2.imwrite("cropped/" + str(idx) + '.png', new_img)
             c2.append(c)
 
     print(len(contours))

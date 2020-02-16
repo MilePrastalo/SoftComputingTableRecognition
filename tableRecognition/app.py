@@ -4,10 +4,12 @@ from flask import Flask
 
 import base64
 
-from service import parseTable
-from service.recogniseTable import recogniseTableFromImage
 from flask_cors import cross_origin
 import flask
+
+from tableRecognition.service import ocr, parseTable
+from tableRecognition.service.recogniseTable import recogniseTableFromImage
+
 UPLOAD_FOLDER = '/images'
 
 app = Flask(__name__)
@@ -27,11 +29,14 @@ def upload_image():
     pictureBase64 = picture['pictureData']
     noise = picture['noise']
     table_image = recogniseTableFromImage(pictureBase64, noise)
-    return True
 
     # parse cropped table and returns cropped images.
     cropped_matrix = parseTable.parseTable(table_image)
+    text = ocr.table_ocr(cropped_matrix)
+    print(text)
+    return True
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(threaded=False)
+
