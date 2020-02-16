@@ -4,5 +4,6 @@
   <input id="fileInput" hidden type="file" (change)="fileChange($event.target.files)" name="file"
     accept=".jpg,.png,.jpeg">
   <button class="margin5" mat-raised-button (click)="openInput()">Select File to Upload</button>
+  <input type="number" placeholder="Noise" [(ngModel)]="noise"/>
   <button (click)="sendImage()">Send</button>
 </div>

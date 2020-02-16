@@ -11,11 +11,13 @@ export class ImageService {
 
   constructor(private http: HttpClient) { }
 
-  uploadImage(image: string): Observable<TableData> {
+  uploadImage(image: string, noiseNum: number): Observable<TableData> {
     image = image.split(',')[1];
     console.log(image);
+    console.log(noiseNum);
     let o = {
-      pictureData: image
+      pictureData: image,
+      noise: noiseNum
     };
     return this.http.post<TableData>(this.serverLocation + '/image', o);
   }
