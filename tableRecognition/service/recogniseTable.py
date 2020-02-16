@@ -43,15 +43,16 @@ def recogniseTableFromImage(img_data, noise):
     b = 0
     i = len(image_bin)
     j = len(image_bin)
+
     while a == 0 or b == 0:
         if (w < 150) or(i <= 100 or j <= 100):
             break
         i -= 1
         j -= 1
         if image_bin[i][75] == 255 and a == 0:
-            a = len(image_bin)-1 - i
+            a = len(image_bin) - i
         if image_bin[j][w-75] == 255 and b == 0:
-            b = len(image_bin)-1 - j
+            b = len(image_bin) - j
 
     rotated = image_bin
     if (a != 0 or b != 0) and abs(a-b) > 20:
