@@ -8,14 +8,13 @@ import numpy as np
 from flask import current_app as app
 
 
-def recogniseTableFromImage(img_data):
+def recogniseTableFromImage(img_data, noise):
     name = convert_and_save(img_data)
     img = cv2.imread(name)
     img2 = cv2.imread(name)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     image_bin = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 15, 5)
-    cv2.imwrite('bin.jpg', image_bin)
     contours, _ = cv2.findContours(image_bin, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     coordinates = []
     for cnt in contours:
@@ -35,6 +34,10 @@ def recogniseTableFromImage(img_data):
     cv2.imwrite('croped.jpg',crop_img)
 
     image_bin = cv2.adaptiveThreshold(crop_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 15, 5)
+    cv2.imwrite('beforeNoise.jpg', image_bin)
+    if int(noise > 0):
+        image_bin = noise_remove(image_bin, noise)
+    cv2.imwrite('afterNoise.jpg', image_bin)
 
     a = 0
     b = 0
@@ -49,10 +52,9 @@ def recogniseTableFromImage(img_data):
             a = len(image_bin)-1 - i
         if image_bin[j][w-75] == 255 and b == 0:
             b = len(image_bin)-1 - j
-    print (a,b)
-    cv2.imwrite('cropedbin.jpg',image_bin)
+
     rotated = image_bin
-    if (a!= 0 or b!=0) and abs(a-b)>20:
+    if (a != 0 or b != 0) and abs(a-b) > 20:
         x1 = abs(a-b)
         x2 = w-150
         x3 = sqrt(x1*x1+x2*x2)
@@ -156,3 +158,38 @@ def getMostChildren(coordinates):
             mostChildren = len(children)
             mostChildrenNode = c
     return mostChildrenNode
+
+
+def noise_remove(image, noise):
+    print(noise)
+    copyImg = image.copy()
+    for i in range(0, len(image)):
+        for j in range(0, len(image[i])):
+            num = 0
+            if image[i][j] == 255:
+                if i > 0 and j > 0:
+                    if image[i-1][j-1] == 255:
+                        num += 1
+                    if image[i-1][j] == 255:
+                        num += 1
+                if j+1 < len(image[i]) and i > 0:
+                    if image[i-1][j+1] == 255:
+                        num += 1
+                if j > 0:
+                    if image[i][j-1] == 255:
+                        num += 1
+                if j+1 < len(image[i]):
+                    if image[i][j+1] == 255:
+                        num += 1
+                if i+1 < len(image):
+                    if j > 0:
+                        if image[i+1][j-1] == 255:
+                            num += 1
+                    if image[i+1][j] == 255:
+                        num += 1
+                    if j+1 < len(image[i]):
+                        if image[i+1][j+1] == 255:
+                            num += 1
+                if num < noise:
+                    copyImg[i][j] = 0
+    return copyImg

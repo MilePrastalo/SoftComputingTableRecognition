@@ -25,7 +25,9 @@ def upload_image():
     f = flask.request.get_json()
     picture = flask.request.get_json()
     pictureBase64 = picture['pictureData']
-    table_image = recogniseTableFromImage(pictureBase64)
+    noise = picture['noise']
+    table_image = recogniseTableFromImage(pictureBase64, noise)
+    return True
 
     # parse cropped table and returns cropped images.
     cropped_matrix = parseTable.parseTable(table_image)

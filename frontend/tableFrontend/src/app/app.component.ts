@@ -9,6 +9,7 @@ import { ImageService } from './image.service';
 export class AppComponent {
   title = 'tableFrontend';
   image = '';
+  noise = 0;
 
   constructor(private imageService: ImageService) { }
 
@@ -29,7 +30,7 @@ export class AppComponent {
     };
   }
   sendImage() {
-    this.imageService.uploadImage(this.image).subscribe(
+    this.imageService.uploadImage(this.image, this.noise).subscribe(
       (response => {
         console.log('success');
       }),
