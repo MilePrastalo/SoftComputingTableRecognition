@@ -1,8 +1,10 @@
+import cv2
 import flask
 from flask import Flask
 
 import base64
 
+from service import parseTable
 from service.recogniseTable import recogniseTableFromImage
 from flask_cors import cross_origin
 import flask
@@ -26,6 +28,9 @@ def upload_image():
     noise = picture['noise']
     table_image = recogniseTableFromImage(pictureBase64, noise)
     return True
+
+    # parse cropped table and returns cropped images.
+    cropped_matrix = parseTable.parseTable(table_image)
 
 
 if __name__ == '__main__':
