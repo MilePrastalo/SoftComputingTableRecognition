@@ -27,19 +27,21 @@ def parseTable(table_img):
 
     # hori_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_length, 1))
     horizontal_size = np.array(table_img).shape[0] // 30
+    print("H size: ", horizontal_size)
     horizontal_structure = cv2.getStructuringElement(cv2.MORPH_RECT, (horizontal_size, 1))
 
     # A verticle kernel of (1 X kernel_length), which will detect all the verticle lines from the image.
     vertical_size = np.array(table_img).shape[1] // 30
-    vertical_structure = cv2.getStructuringElement(cv2.MORPH_RECT, (1, vertical_size))
+    print("V size: ", vertical_size)
+    vertical_structure = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 17))
 
     # A kernel of (7 X 3) ones.
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 3))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (8, 4))
 
     # Morphological operation to detect vertical lines from an image
     img_temp1 = cv2.erode(table_img, vertical_structure, iterations=3)
     cv2.imwrite("img_templ.jpg", img_temp1)
-    verticle_lines_img = cv2.dilate(img_temp1, vertical_structure, iterations=4)
+    verticle_lines_img = cv2.dilate(img_temp1, vertical_structure, iterations=3)
     cv2.imwrite("verticle_lines.jpg", verticle_lines_img)
     # Morphological operation to detect horizontal lines from an image
     img_temp2 = cv2.erode(table_img, horizontal_structure, iterations=3)
@@ -75,19 +77,54 @@ def parseTable(table_img):
         average_h = average_h / h_cnt
     else:
         return
+
     print("average h: ", average_h)
     idx = 0
+    c2 = []
     for c in contours:
 
         # Returns the location and width,height for every contour
         # If the box height is greater then 50 or height > average height - 7,
         # width is >200, only then save it as a box in "cropped/" folder.
         x, y, w, h = cv2.boundingRect(c)
-        print(w, h)
+
         if (w > 200 and (h > 50 or h > average_h - 7)):
-            print(w, h)
             idx += 1
-            new_img = table_img[y:y + h, x:x + w]
-            cv2.imwrite("cropped/" + str(idx) + '.png', new_img)
+            # new_img = table_img[y:y + h, x:x + w]
+            # cv2.imwrite("cropped/" + str(idx) + '.png', new_img)
+            c2.append(c)
 
     print(len(contours))
+
+    cropped_matrix = recreate_table(c2)
+    matrix_copy = []
+    print("MATRICA")
+    for idx1, niz in enumerate(cropped_matrix):
+        print('=== RED ===')
+        matrix_copy.append([])
+        for idx2, item in enumerate(niz):
+            x, y, w, h = cv2.boundingRect(item)
+            print(x, y, w, h)
+            matrix_copy[idx1].append(table_img[y:y + h, x:x + w])
+
+    return matrix_copy
+
+
+def recreate_table(contours):
+    breaks = []
+    breaks.append(0)
+
+    for i in range(0, len(contours) - 1):
+        x_curr, y_curr, w_curr, h_curr = cv2.boundingRect(contours[i])
+        x_next, y_next, w_next, h_next = cv2.boundingRect(contours[i + 1])
+
+        if y_next < (y_curr + 10) and y_next > (y_curr - 10):
+            continue
+        else:
+            breaks.append(i + 1)
+
+    matrix = []
+    for i in range(len(breaks) - 1):
+        matrix.append(reversed(contours[breaks[i]:breaks[i + 1]]))
+
+    return matrix

@@ -1,3 +1,4 @@
+import cv2
 import flask
 from flask import Flask
 
@@ -26,8 +27,8 @@ def upload_image():
     pictureBase64 = picture['pictureData']
     table_image = recogniseTableFromImage(pictureBase64)
 
-    # parse cropped table
-    parseTable.parseTable(table_image)
+    # parse cropped table and returns cropped images.
+    cropped_matrix = parseTable.parseTable(table_image)
 
 
 if __name__ == '__main__':
