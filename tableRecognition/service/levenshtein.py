@@ -75,6 +75,8 @@ def get_number(s1):
                 s1 = s1[:i] + '5' + s1[i + 1:]
             elif (char == 'q' or char == 'g') and i != (len(s1)-1):
                 s1 = s1[:i] + '9' + s1[i + 1:]
+            elif char == '%':
+                continue
             else:
                 s1 = s1[:i] + ',' + s1[i + 1:]
     return s1
