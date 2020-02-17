@@ -267,7 +267,7 @@ def ocr(ann, regions, alphabet, distances):
 
 def training():
     print('ALPHABET SIZE = ' + str(len(alphabet)))
-    filename = "C:/Users/Jelena Cuk/Desktop/SOFT/SoftComputingTableRecognition/tableRecognition/images/train_arial.png"
+    filename = "C:/Users/Jelena Cuk/Desktop/SOFT/SoftComputingTableRecognition/tableRecognition/ocr_results/train_arial.png"
     img_org = load_image(filename)
     img_gray = image_gray(img_org)
     img_bin = image_bin(img_gray)
