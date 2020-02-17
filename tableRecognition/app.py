@@ -1,6 +1,7 @@
 import cv2
 import flask
 from flask import Flask
+import io
 
 import base64
 
@@ -33,7 +34,9 @@ def upload_image():
     # parse cropped table and returns cropped images.
     cropped_matrix = parseTable.parseTable(table_image)
     text = ocr.table_ocr(cropped_matrix)
-    print(text)
+    file = io.open("result.txt", 'w',  encoding="utf-8")
+    file.write(str(text))
+    file.close()
     return True
 
 

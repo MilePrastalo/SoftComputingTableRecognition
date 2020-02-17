@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import collections
 
 # prikaz vecih slika
+from tableRecognition.service import levenshtein
+
 matplotlib.rcParams['figure.figsize'] = 16, 12
 
 # keras
@@ -119,6 +121,7 @@ def sort_regions(regions):
               and (current_reg[1][1] - current_reg[1][3]) >= regions[i - 1][1][1]):
             breaks.append(i + 1)
     breaks.append(len(regions))
+    print(breaks)
     for i in range(len(breaks) - 1):
         regions[breaks[i]:breaks[i + 1]] = sorted(regions[breaks[i]:breaks[i + 1]], key=lambda x: x[1][0])
     return regions
@@ -129,7 +132,7 @@ def select_roi_with_distances(image_orig, image_bin, help_):
     regions_array = []
     for contour in contours:
         x, y, w, h = cv2.boundingRect(contour)
-        if (w < help_ and h > 7):
+        if (w < help_ and h > 5 and h < image_orig.shape[0]):
             region = image_bin[y:y + h + 1, x:x + w + 1]
             regions_array.append([resize_region(region), (x, y, w, h + 1)])
             cv2.rectangle(image_orig, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -150,14 +153,21 @@ def select_roi_with_distances(image_orig, image_bin, help_):
     return regions_array, region_distances
 
 
-def display_result_with_spaces(outputs, alphabet, k_means):
-    # odredjivanje indeksa grupe koja odgovara rastojanju izmedju reci
-    w_space_group = max(enumerate(k_means.cluster_centers_), key=lambda x: x[1])[0]
+def get_spaces(distances):
+    spaces = []
+    for idx, space in enumerate(distances):
+        if (space > 17 and space < 26):
+            spaces.append(idx)
+    return spaces
+
+
+def display_result_with_spaces(outputs, alphabet, distances):
     result = alphabet[winner(outputs[0])]
+    spaces = get_spaces(distances)
     # iterativno dodavanje prepoznatih elemenata
     # dodavanje space karaktera ako je rastojanje izmedju dva slova odgovara rastojanju izmedju reci
     for idx, output in enumerate(outputs[1:, :]):
-        if k_means.labels_[idx] == w_space_group:
+        if idx in spaces:
             result += ' '
         result += alphabet[winner(output)]
     return result
@@ -170,33 +180,35 @@ def help_function(idx, last_idx, regions):
     elif idx == last_idx and idx != 0:
         left = -1
     else:
-        diff_left = abs(regions[idx][1][0] - regions[idx - 1][1][0])
-        diff_right = abs(regions[idx][1][0] - regions[idx + 1][1][0])
-        if diff_left <= diff_right:
+        razlika_levo = abs(regions[idx][1][0] - regions[idx - 1][1][0])
+        razlika_desno = abs(regions[idx][1][0] - regions[idx + 1][1][0])
+        space = (regions[idx][1][0] + regions[idx][1][2]) < regions[idx + 1][1][0]
+        if razlika_levo <= razlika_desno:
             left = -1
-        elif diff_left > diff_right and ((regions[idx][1][0] + regions[idx][1][2]) <= regions[idx + 1][1][0]):
+        elif (razlika_levo > razlika_desno and ((regions[idx][1][0] + regions[idx][1][2]) <= regions[idx + 1][1][0])):
             left = -1
         else:
             left = 1
     return left
 
 
+def get_hooks(heights):
+    hooks = []
+    for idx, h in enumerate(heights):
+        if (h > 6 and h < 13):
+            hooks.append(idx)
+    return hooks
+
+
 def detect_serbian_letters(sorted_regions, img_bin):
+    region_heights = [region[1][3] for region in sorted_regions]
+    region_heights = np.array(region_heights).reshape(len(region_heights), 1)
 
-    #Izdvajamo samo visine i primenjujemo K-means
-    # tri klastera: velika  slova, mala slova i kukice
-    heights = [region[1][3] for region in sorted_regions]
-    heights = np.array(heights).reshape(len(heights), 1)
-    k_means = KMeans(n_clusters=3, max_iter=2000, tol=0.00001, n_init=10)
-    k_means.fit(heights)
-    hooks = min(enumerate(k_means.cluster_centers_), key=lambda x: x[1])[0]
-
-    #Prolazimo kroz izdvojene regione i ako je region kukica
-    #spajamo ga sa prethodnim/sledecim regionom
-    remove = []
+    kukice_group = get_hooks(region_heights)
+    index_to_avoid = []
     for i, region in enumerate(sorted_regions):
         flag = help_function(i, len(sorted_regions) - 1, sorted_regions)
-        if ((k_means.labels_[i] == hooks)
+        if ((i in kukice_group)
                 and ((sorted_regions[i][1][1] + sorted_regions[i][1][3]) <= sorted_regions[i + flag][1][1])):
             y = sorted_regions[i][1][1]
             x = sorted_regions[i + flag][1][0]
@@ -207,16 +219,31 @@ def detect_serbian_letters(sorted_regions, img_bin):
             region = img_bin[y:y + h + 1, x:x + w + 1]
             sorted_regions[i + flag] = [resize_region(region), (x, y, w, h)]
             # remove
-            remove.append(i)
-        elif ((k_means.labels_[i] == hooks) and (
+            index_to_avoid.append(i)
+        elif ((i in kukice_group) and (
                 (sorted_regions[i][1][1] + sorted_regions[i][1][3]) >= sorted_regions[i - 1][1][1])):
-            remove.append(i)
-    sorted_regions = [reg for idx, reg in enumerate(sorted_regions) if idx not in remove]
+            # remove
+            index_to_avoid.append(i)
+        # procenat
+        elif ((i not in kukice_group) and
+              (sorted_regions[i][1][3] > 18) and (sorted_regions[i][1][3] < 28)):
+            y = sorted_regions[i + flag][1][1]
+            x = sorted_regions[i][1][0]
+            w = sorted_regions[i + flag][1][2] + (sorted_regions[i + flag][1][0] - sorted_regions[i][1][0])
+            if flag == -1:
+                x = sorted_regions[i + flag][1][0]
+                w = sorted_regions[i + flag][1][2] + (sorted_regions[i][1][0] + sorted_regions[i][1][2]) - (
+                            sorted_regions[i + flag][1][0] + sorted_regions[i + flag][1][2])
+            h = sorted_regions[i + flag][1][3]
+            region = img_bin[y:y + h + 1, x:x + w + 1]
+            sorted_regions[i + flag] = [resize_region(region), (x, y, w, h)]
+            index_to_avoid.append(i)
+    sorted_regions = [reg for idx, reg in enumerate(sorted_regions) if idx not in index_to_avoid]
     return sorted_regions
 
 
 def calculate_distance(regions_array):
-
+    sorted_regions = [region[0] for region in regions_array]
     sorted_rectangles = [region[1] for region in regions_array]
     region_distances = []
     # izdvojiti sortirane parametre opisujucih pravougaonika
@@ -224,8 +251,7 @@ def calculate_distance(regions_array):
     for index in range(0, len(sorted_rectangles) - 1):
         current = sorted_rectangles[index]
         next_rect = sorted_rectangles[index + 1]
-        # x_next - (x_current + w_current)
-        distance = next_rect[0] - (current[0] + current[2])
+        distance = next_rect[0] - (current[0] + current[2])  # x_next - (x_current + w_current)
         region_distances.append(distance)
     return region_distances
 
@@ -237,11 +263,11 @@ def draw_regions(img, regions):
     display_image(img)
 
 
-def train_nn(alphabet, regions, ann):
+def train_nn( alphabet, regions, ann):
     outputs = convert_output(alphabet)
     regions = [region[0] for region in regions]
     inputs = prepare_for_ann(regions)
-    ann = train_ann(ann, inputs, outputs, 4000)
+    ann = train_ann(ann, inputs, outputs, 6000)
     return ann
 
 
@@ -249,16 +275,14 @@ def ocr(ann, regions, alphabet, distances):
     regions = [region[0] for region in regions]
     inputs = prepare_for_ann(regions)
     result = ann.predict(np.array(inputs, np.float32))
-    k_means = KMeans(n_clusters=3, max_iter=2000, tol=0.00001, n_init=10)
-    distances = np.array(distances).reshape(len(distances), 1)
-    k_means.fit(distances)
-    res = display_result_with_spaces(result, alphabet, k_means)
+    res = display_result_with_spaces(result, alphabet, distances)
     return res
+
 
 def training(alphabet):
 
     print('ALPHABET SIZE = ' + str(len(alphabet)))
-    filename = "C:/Users/Jelena Cuk/Desktop/SOFT/SoftComputingTableRecognition/tableRecognition/images/train_arial_space.png"
+    filename = "C:/Users/Jelena Cuk/Desktop/SOFT/SoftComputingTableRecognition/tableRecognition/images/train_arial1.png"
     img_org = load_image(filename)
     img_gray = image_gray(img_org)
     img_bin = image_bin(img_gray)
@@ -301,7 +325,7 @@ def load_model_from_disk():
     return ann
 
 def table_ocr(table):
-    alphabet = "QWERTYUIOPASDFGHJKLZXCVBNMŠĐČĆŽqwertyuiopasdfghjklzxcvbnmšđčćž0123456789"
+    alphabet = "QWERTYUIOPASDFGHJKLZXCVBNMŠĐČĆŽqwertyuiopasdfghjklzxcvbnmšđčćž%0123456789\,/"
     alphabet = [c for c in alphabet]
     #ann = training(alphabet)
     ann = load_model_from_disk()
@@ -309,13 +333,19 @@ def table_ocr(table):
     for row in table:
         row_text = ''
         for i, column in enumerate(row):
-            #cv2.imwrite("cropped/" + str(i) + '.png', column)
-            #img_gray = image_gray(column)
-            ret, img_bin = cv2.threshold(column, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-            regions, distances = select_roi_with_distances(column.copy(), img_bin, 60)
-            regions = detect_serbian_letters(regions, img_bin)
-            distances = calculate_distance(regions)
-            res = ocr(ann, regions, alphabet, distances)
+            res = 'xxx'
+            try:
+                #img_gray = image_gray(column)
+                ret, img_bin = cv2.threshold(column, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+                # regions
+                regions, distances = select_roi_with_distances(column.copy(), img_bin, 60)
+                regions = detect_serbian_letters(regions, img_bin)
+                # calculate distances
+                distances = calculate_distance(regions)
+                res = ocr(ann, regions, alphabet, distances)
+                res = levenshtein.convert_to_real_word(res)
+            except Exception:
+                pass
             row_text = row_text + " " + res
         table_text = table_text + row_text + '\n'
     return table_text
