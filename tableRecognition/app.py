@@ -8,8 +8,8 @@ import base64
 from flask_cors import cross_origin
 import flask
 
-from tableRecognition.service import ocr, parseTable
-from tableRecognition.service.recogniseTable import recogniseTableFromImage
+from service import ocr, parseTable
+from service.recogniseTable import recogniseTableFromImage
 
 UPLOAD_FOLDER = '/images'
 
@@ -32,7 +32,7 @@ def upload_image():
     table_image = recogniseTableFromImage(pictureBase64, noise)
 
     # parse cropped table and returns cropped images.
-    cropped_matrix = parseTable.parseTable(table_image)
+    cropped_matrix = parseTable.parse_table(table_image)
     text = ocr.table_ocr(cropped_matrix)
     file = io.open("result.txt", 'w',  encoding="utf-8")
     file.write(str(text))

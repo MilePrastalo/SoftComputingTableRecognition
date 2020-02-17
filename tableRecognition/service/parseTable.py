@@ -2,27 +2,7 @@ import cv2.cv2 as cv2
 import numpy as np
 
 
-def sort_contours(cnts, method="left-to-right"):
-    # initialize the reverse flag and sort index
-    reverse = False
-    i = 0
-    # handle if we need to sort in reverse
-    if method == "right-to-left" or method == "bottom-to-top":
-        reverse = True
-    # handle if we are sorting against the y-coordinate rather than
-    # the x-coordinate of the bounding box
-    if method == "top-to-bottom" or method == "bottom-to-top":
-        i = 1
-    # construct the list of bounding boxes and sort them from top to
-    # bottom
-    boundingBoxes = [cv2.boundingRect(c) for c in cnts]
-    (cnts, boundingBoxes) = zip(*sorted(zip(cnts, boundingBoxes),
-                                        key=lambda b: b[1][i], reverse=reverse))
-    # return the list of sorted contours and bounding boxes
-    return (cnts, boundingBoxes)
-
-
-def parseTable(table_img):
+def parse_table(table_img):
     cv2.imwrite("table_img.jpg", table_img)
 
     # hori_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_length, 1))
@@ -51,7 +31,8 @@ def parseTable(table_img):
     # Weighting parameters, this will decide the quantity of an image to be added to make a new image.
     alpha = 0.5
     beta = 1.0 - alpha
-    # This function helps to add two image with specific weight parameter to get a third image as summation of two image.
+    # This function helps to add two image with specific weight parameter
+    # to get a third image as summation of two image.
     img_final_bin = cv2.addWeighted(verticle_lines_img, alpha, horizontal_lines_img, beta, 0.0)
     cv2.imwrite("img_final_bin1.jpg", img_final_bin)
     img_final_bin = cv2.erode(~img_final_bin, kernel, iterations=4)
@@ -61,6 +42,7 @@ def parseTable(table_img):
 
     # Find contours for image, which will detect all the boxes
     contours, hierarchy = cv2.findContours(img_final_bin, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
     # Sort all the contours by top to bottom.
     (contours, boundingBoxes) = sort_contours(contours, method="top-to-bottom")
 
@@ -79,8 +61,7 @@ def parseTable(table_img):
         return
 
     print("average h: ", average_h)
-    idx = 0
-    c2 = []
+    valid_contours = []
     for c in contours:
 
         # Returns the location and width,height for every contour
@@ -88,15 +69,14 @@ def parseTable(table_img):
         # width is >200, only then save it as a box in "cropped/" folder.
         x, y, w, h = cv2.boundingRect(c)
 
-        if (w > 200 and (h > 50 or h > average_h - 7)):
-            idx += 1
-            new_img = table_img[y:y + h, x:x + w]
-            c2.append(c)
+        if w > 200 and (h > 50 or h > average_h - 7):
+            valid_contours.append(c)
 
+    # Recreates table positions with cropped contours of original table.
+    cropped_matrix = recreate_table(valid_contours)
 
-
-    cropped_matrix = recreate_table(c2)
     matrix_copy = []
+
     print("MATRICA")
     for idx1, niz in enumerate(cropped_matrix):
         print('=== RED ===')
@@ -104,6 +84,7 @@ def parseTable(table_img):
         for idx2, item in enumerate(niz):
             x, y, w, h = cv2.boundingRect(item)
             print(x, y, w, h)
+            # Adds cropped images to positions of copied recreated table.
             matrix_copy[idx1].append(table_img[y:y + h, x:x + w])
             cv2.imwrite("cropped/" + str(idx1) + '___' + str(idx2) + '.png', table_img[y:y + h, x:x + w])
 
@@ -111,20 +92,60 @@ def parseTable(table_img):
 
 
 def recreate_table(contours):
-    breaks = []
+    breaks = list()
+    # Adds first table element.
     breaks.append(0)
 
+    # Decides in which row should the element be.
     for i in range(0, len(contours) - 1):
         x_curr, y_curr, w_curr, h_curr = cv2.boundingRect(contours[i])
         x_next, y_next, w_next, h_next = cv2.boundingRect(contours[i + 1])
 
-        if y_next < (y_curr + 15) and y_next > (y_curr - 15):
+        if (y_curr - 15) < y_next < (y_curr + 15):
             continue
         else:
             breaks.append(i + 1)
+
+    # Adds last table element.
     breaks.append(len(contours))
+
+    # Creates the table matrix and feels it with contour indexes.
+    # Also sorts it from left to right.
     matrix = []
     for i in range(len(breaks) - 1):
-        matrix.append(reversed(contours[breaks[i]:breaks[i + 1]]))
+        print(i, breaks[i])
+        if breaks[i] + 1 == len(contours):
+            matrix.append([contours[breaks[i]]])
+            break
+        if i == len(breaks) - 1:
+            break
+        x_curr = cv2.boundingRect(contours[breaks[i]])
+        x_next = cv2.boundingRect(contours[breaks[i] + 1])
+
+        # Checks which one is first, left or right.
+        if x_curr > x_next:
+            matrix.append(reversed(contours[breaks[i]:breaks[i + 1]]))
+        else:
+            matrix.append((contours[breaks[i]:breaks[i + 1]]))
 
     return matrix
+
+
+def sort_contours(cnts, method="left-to-right"):
+    # initialize the reverse flag and sort index
+    reverse = False
+    i = 0
+    # handle if we need to sort in reverse
+    if method == "right-to-left" or method == "bottom-to-top":
+        reverse = True
+    # handle if we are sorting against the y-coordinate rather than
+    # the x-coordinate of the bounding box
+    if method == "top-to-bottom" or method == "bottom-to-top":
+        i = 1
+    # construct the list of bounding boxes and sort them from top to
+    # bottom
+    boundingBoxes = [cv2.boundingRect(c) for c in cnts]
+    (cnts, boundingBoxes) = zip(*sorted(zip(cnts, boundingBoxes),
+                                        key=lambda b: b[1][i], reverse=reverse))
+    # return the list of sorted contours and bounding boxes
+    return (cnts, boundingBoxes)

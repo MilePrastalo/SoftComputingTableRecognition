@@ -1,9 +1,29 @@
 <!--<router-outlet></router-outlet>-->
 <div>
-  <img [src]="image" alt="">
-  <input id="fileInput" hidden type="file" (change)="fileChange($event.target.files)" name="file"
-    accept=".jpg,.png,.jpeg">
-  <button class="margin5" mat-raised-button (click)="openInput()">Select File to Upload</button>
-  <input type="number" placeholder="Noise" [(ngModel)]="noise"/>
-  <button (click)="sendImage()">Send</button>
+  <table align="center">
+    <tr>
+      <td>
+          <img [src]="image" alt="" height="500" >
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <input id="fileInput" hidden type="file" (change)="fileChange($event.target.files)" name="file"
+          accept=".jpg,.png,.jpeg">
+        <button mat-raised-button color="primary" (click)="openInput()">Select File to Upload</button>
+      </td>
+    </tr>
+    <br/>
+    <tr>
+      <td>
+          <mat-label>Noise removal level(0 - 9): </mat-label>
+          <input matInput type="number" placeholder="Noise" [(ngModel)]="noise" min="0" max="9"/>
+      </td>
+    </tr>
+    <tr>
+        <td>
+            <button (click)="sendImage()" mat-raised-button color="primary">Send</button>
+        </td>
+      </tr>
+  </table>
 </div>
