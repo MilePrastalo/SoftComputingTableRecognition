@@ -56,6 +56,8 @@ def handle_number(s1):
                 s1 = s1[:i] + '5' + s1[i + 1:]
             elif char == '9' or char == 'q' or char == 'g':
                 s1 = s1[:i] + 'g' + s1[i + 1:]
+            elif char == ' ':
+                continue
             else:
                 s1 = s1[:i] + ',' + s1[i + 1:]
     s1 = s1[:(len(s1) - 4)] + 'kcal'
@@ -73,15 +75,24 @@ def get_number(s1):
                 s1 = s1[:i] + '5' + s1[i + 1:]
             elif (char == 'q' or char == 'g') and i != (len(s1)-1):
                 s1 = s1[:i] + '9' + s1[i + 1:]
-            elif i == (len(s1)-1):
-                s1 = s1[:i] + 'g' + s1[i + 1:]
             else:
                 s1 = s1[:i] + ',' + s1[i + 1:]
     return s1
 
+def digit_count(text):
+    cnt = 0
+    for c in text:
+        if c.isdigit():
+            cnt = cnt + 1
+    return cnt
 
 def convert_to_real_word(text):
     if (text[0].isdigit()):
         return get_number(text)
+    elif text[0] == 'o' or text[0] == 'O':
+        if 2 <= len(text) <= 6 and digit_count(text) > 0:
+            return get_number(text)
+        else:
+            return get_real_word(text)
     else:
         return get_real_word(text)
