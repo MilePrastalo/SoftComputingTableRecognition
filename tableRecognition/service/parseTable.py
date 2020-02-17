@@ -91,10 +91,9 @@ def parseTable(table_img):
         if (w > 200 and (h > 50 or h > average_h - 7)):
             idx += 1
             new_img = table_img[y:y + h, x:x + w]
-            cv2.imwrite("cropped/" + str(idx) + '.png', new_img)
             c2.append(c)
 
-    print(len(contours))
+
 
     cropped_matrix = recreate_table(c2)
     matrix_copy = []
@@ -106,6 +105,7 @@ def parseTable(table_img):
             x, y, w, h = cv2.boundingRect(item)
             print(x, y, w, h)
             matrix_copy[idx1].append(table_img[y:y + h, x:x + w])
+            cv2.imwrite("cropped/" + str(idx1) + '___' + str(idx2) + '.png', table_img[y:y + h, x:x + w])
 
     return matrix_copy
 
@@ -118,11 +118,11 @@ def recreate_table(contours):
         x_curr, y_curr, w_curr, h_curr = cv2.boundingRect(contours[i])
         x_next, y_next, w_next, h_next = cv2.boundingRect(contours[i + 1])
 
-        if y_next < (y_curr + 10) and y_next > (y_curr - 10):
+        if y_next < (y_curr + 15) and y_next > (y_curr - 15):
             continue
         else:
             breaks.append(i + 1)
-
+    breaks.append(len(contours))
     matrix = []
     for i in range(len(breaks) - 1):
         matrix.append(reversed(contours[breaks[i]:breaks[i + 1]]))
