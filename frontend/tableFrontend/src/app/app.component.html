@@ -1,5 +1,5 @@
-<!--<router-outlet></router-outlet>-->
-<div>
+<router-outlet></router-outlet>
+<div *ngIf = "!showResult">
   <table align="center">
     <tr>
       <td>
@@ -26,4 +26,17 @@
         </td>
       </tr>
   </table>
+</div>
+<div *ngIf = "showResult" style="margin-top: 10%;" align="center">
+  <h3>RESULT:</h3>
+  <table align="center" border="1">
+    <tr *ngFor="let row of result.data">
+        <td *ngFor="let col of row">
+          {{col}}
+        </td>
+    </tr>
+  </table>
+  <div align="center">
+    <button (click)="back()" mat-raised-button color="primary">Back</button>
+  </div>
 </div>

@@ -33,11 +33,11 @@ def upload_image():
 
     # parse cropped table and returns cropped images.
     cropped_matrix = parseTable.parse_table(table_image)
-    text = ocr.table_ocr(cropped_matrix)
+    text, matrica = ocr.table_ocr(cropped_matrix)
     file = io.open("result.txt", 'w',  encoding="utf-8")
     file.write(str(text))
     file.close()
-    return True
+    return {'data': matrica}
 
 
 if __name__ == '__main__':

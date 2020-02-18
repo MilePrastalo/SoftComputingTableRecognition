@@ -2,7 +2,7 @@ import numpy as np
 import cv2  # OpenCV
 import matplotlib
 import matplotlib.pyplot as plt
-from tableRecognition.service import levenshtein
+from service import levenshtein
 # keras
 from keras.models import Sequential
 from keras.layers.core import Dense, Activation
@@ -150,19 +150,29 @@ def select_roi_with_distances(image_orig, image_bin, help_):
 def get_spaces(distances):
     spaces = []
     for idx, space in enumerate(distances):
-        if 17 < space < 26:
+        if 17 < space < 27:
             spaces.append(idx)
     return spaces
 
 
+def get_newline(distances):
+    newlines = []
+    for idx, space in enumerate(distances):
+        if space < 0 and abs(space) > 60:
+            newlines.append(idx)
+    return newlines
+
 def display_result_with_spaces(outputs, alphabet, distances):
     result = alphabet[winner(outputs[0])]
     spaces = get_spaces(distances)
+    newlines = get_newline(distances)
     # iterativno dodavanje prepoznatih elemenata
     # dodavanje space karaktera ako je rastojanje izmedju dva slova odgovara rastojanju izmedju reci
     for idx, output in enumerate(outputs[1:, :]):
         if idx in spaces:
             result += ' '
+        elif idx in newlines:
+            result += '\n'
         result += alphabet[winner(output)]
     return result
 
@@ -267,7 +277,7 @@ def ocr(ann, regions, alphabet, distances):
 
 def training():
     print('ALPHABET SIZE = ' + str(len(alphabet)))
-    filename = "C:/Users/Jelena Cuk/Desktop/SOFT/SoftComputingTableRecognition/tableRecognition/ocr_results/train_arial.png"
+    filename = "C:/Users/Jelena Cuk/Desktop/SOFT PROJEKAT/SoftComputingTableRecognition/tableRecognition/ocr_results/train_arial.png"
     img_org = load_image(filename)
     img_gray = image_gray(img_org)
     img_bin = image_bin(img_gray)
@@ -291,24 +301,40 @@ def training():
 
 
 def load_model_from_disk():
-    json_file = open('model.json', 'r')
+    json_file = open('service/model.json', 'r')
     loaded_model_json = json_file.read()
     json_file.close()
     ann = model_from_json(loaded_model_json)
     # load weights into new model
-    ann.load_weights("model.h5")
+    ann.load_weights("service/model.h5")
     print("Loaded model from disk")
     return ann
 
-
+def get_text(filename):
+    img_org = load_image(filename)
+    img_gray = image_gray(img_org)
+    img_bin = image_bin(img_gray)
+    #img_bin = invert(img_bin)
+    #ret, img_bin = cv2.threshold(img_bin, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    regions, distances = select_roi_with_distances(img_org.copy(), img_bin, 100)
+    #regions = detect_serbian_letters(regions, img_bin)
+    print('REGIONS = ' + str(len(regions)))
+    draw_regions(img_org, regions, 'VEZBA' + '.png')
+    distances = calculate_distance(regions)
+    print('DISTANCES = ' + str(distances))
+    ann = load_model_from_disk()
+    res = ocr(ann, regions, alphabet, distances)
+    return res
 
 def table_ocr(table):
 
     # ann = training(alphabet)
     ann = load_model_from_disk()
     table_text = ""
+    matrica = []
     for idx1, row in enumerate(table):
         row_text = ''
+        matrica.append([])
         for i, column in enumerate(row):
             res = 'xxx'
             try:
@@ -326,14 +352,16 @@ def table_ocr(table):
                 print('LEVENSHTEIN => ' + res)
             except Exception:
                 pass
+            matrica[idx1].append(res)
             row_text = row_text + " " + res
         table_text = table_text + row_text + '\n'
-    return table_text
+    return table_text, matrica
 
 
 #if __name__ == '__main__':
 
-
+    #res = get_text("C:/Users/Jelena Cuk/Desktop/TEST SKUP/DVA_reda_BROJEVI.png")
+    #print(res)
     #training()
 # ann = load_model_from_disk()
 # text = get_text(filename, ann, alphabet)

@@ -1,7 +1,7 @@
 recnik = [
     'od kojih zasićene masne kiseline',
     'prosečne hranljive vrednosti na 100g proizvoda',
-    'prosečne nutritivne vrednosti na 100g proizvoda'
+    'prosečne nutritivne vrednosti na 100g proizvoda',
     'energetska vrednost',
     'energija',
     'proteini',
@@ -31,19 +31,20 @@ def levenshtein_(s1, s2):
             substitutions = previous_row[j] + (c1 != c2)
             current_row.append(min(insertions, deletions, substitutions))
         previous_row = current_row
-
     return previous_row[-1]
 
 
 def get_real_word(word):
     word = word.lower()
-    best = 100
+    best = 10000
     idx_dictonary = -1
     for i, rec in enumerate(recnik):
         res = levenshtein_(word, rec)
-        if (res < best):
+        if (res < best and res < len(word)/2):
             best = res
             idx_dictonary = i
+    if best >= len(word):
+        return word
     return recnik[idx_dictonary]
 
 
@@ -73,13 +74,16 @@ def get_number(s1):
                 s1 = s1[:i] + '0' + s1[i + 1:]
             elif char == 's' or char == 'S':
                 s1 = s1[:i] + '5' + s1[i + 1:]
-            elif (char == 'q' or char == 'g') and i != (len(s1)-1):
+            elif (char == 'q' or char == 'g') and i != (len(s1) - 1):
                 s1 = s1[:i] + '9' + s1[i + 1:]
+            elif (char == 'q' or char == 'g') and i == (len(s1) - 1):
+                s1 = s1[:i] + 'g' + s1[i + 1:]
             elif char == '%':
                 continue
             else:
                 s1 = s1[:i] + ',' + s1[i + 1:]
     return s1
+
 
 def digit_count(text):
     cnt = 0
@@ -88,8 +92,9 @@ def digit_count(text):
             cnt = cnt + 1
     return cnt
 
+
 def convert_to_real_word(text):
-    if (text[0].isdigit()):
+    if text[0].isdigit():
         return get_number(text)
     elif text[0] == 'o' or text[0] == 'O':
         if 2 <= len(text) <= 6 and digit_count(text) > 0:
@@ -98,3 +103,5 @@ def convert_to_real_word(text):
             return get_real_word(text)
     else:
         return get_real_word(text)
+
+

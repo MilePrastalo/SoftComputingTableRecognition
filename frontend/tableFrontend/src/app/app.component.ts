@@ -1,5 +1,7 @@
 import { Component } from '@angular/core';
 import { ImageService } from './image.service';
+import { TableData } from 'src/model/tableData';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-root',
@@ -10,8 +12,10 @@ export class AppComponent {
   title = 'tableFrontend';
   image = '';
   noise = 0;
+  result: TableData;
+  showResult = false;
 
-  constructor(private imageService: ImageService) { }
+  constructor(private imageService: ImageService, private router: Router) { }
 
 
   openInput() {
@@ -32,11 +36,17 @@ export class AppComponent {
   sendImage() {
     this.imageService.uploadImage(this.image, this.noise).subscribe(
       (response => {
-        console.log('success');
+        console.log(JSON.stringify(response));
+        this.result = response;
+        this.showResult = true;
       }),
       (error => {
         console.log('error');
       })
     );
+  }
+
+  back() {
+    location.reload();
   }
 }
