@@ -39,34 +39,46 @@ def recogniseTableFromImage(img_data, noise):
     if int(noise > 0):
         image_bin = noise_remove(image_bin, noise)
     cv2.imwrite('afterNoise.jpg', image_bin)
+    contours, _ = cv2.findContours(image_bin, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    img_bin_cpy = image_bin.copy()
+    for cnt in contours:
+        xi, yi, wi, hi = cv2.boundingRect(cnt)
+        if (wi < (wImg*0.03)) or (hi < (hImg*0.02)):
+            img_bin_cpy[yi:yi+hi,xi:xi+wi] = 0
+    cv2.imwrite('img_bin_cpy.jpg', img_bin_cpy)
+    #kernel = np.ones((5, 5), np.uint8)
+    #img_bin_cpy = extendHorizontal(img_bin_cpy,2)
+    #cv2.imwrite('img_bin_cpy_dilate.jpg', img_bin_cpy)
+
+
 
     a = 0
     b = 0
     c = 0
-    i = len(image_bin)
+    i = len(img_bin_cpy)
 
     while a == 0 or b == 0:
         if (w < 150) or(i <= 100):
             break
         i -= 1
-        if image_bin[i][int(w*0.05)] == 255 and a == 0:
-            a = len(image_bin) - i
-        if image_bin[i][int(w*0.95)] == 255 and b == 0:
-            b = len(image_bin) - i
-        if image_bin[i][int(w*0.5)] == 255 and c == 0:
-            c = len(image_bin) - i
-        if (image_bin[i][int(w/2)] == 255) and a == 0 and b == 0: # if image is curved don't rotate
+        if img_bin_cpy[i][int(w*0.05)] == 255 and a == 0:
+            a = len(img_bin_cpy) - i
+        if img_bin_cpy[i][int(w*0.95)] == 255 and b == 0:
+            b = len(img_bin_cpy) - i
+        if img_bin_cpy[i][int(w*0.5)] == 255 and c == 0:
+            c = len(img_bin_cpy) - i
+        if (img_bin_cpy[i][int(w/2)] == 255) and a == 0 and b == 0: # if image is curved don't rotate
             break
 
     rotated = image_bin
     if a != 0 or b != 0:
         if a > b:
-            if a > 3 * c and c > 3 * b:
+            if a > 3 * c and c < 5 * b:
                 b = c
                 a = a/2
                 print("a=c")
         elif b > a:
-            if b > 3*c and c > 3*a:
+            if b > 3*c and c < 5*a:
                 a = c
                 b = b/2
                 print("b=c")
@@ -208,4 +220,16 @@ def noise_remove(image, noise):
                             num += 1
                 if num < noise:
                     copyImg[i][j] = 0
+    return copyImg
+
+def extendHorizontal(image, iteration= 1):
+    copyImg = image.copy()
+    for iter in range(0, iteration):
+        copyImgIter = copyImg.copy()
+        for i in range(0, len(image)):
+            for j in range(0, len(image[i])):
+                if j > 0 and j < len(copyImg[i]) - 1:
+                    if copyImg[i][j] == 0 and (copyImg[i][j-1] == 255 or copyImg[i][j+1] == 255):
+                        copyImgIter[i][j] = 255
+        copyImg = copyImgIter
     return copyImg
