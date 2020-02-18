@@ -17,9 +17,10 @@ def recogniseTableFromImage(img_data, noise):
     image_bin = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 15, 5)
     contours, _ = cv2.findContours(image_bin, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     coordinates = []
+    xImg, yImg, wImg, hImg = cv2.boundingRect(image_bin)
     for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
-        if (w < 30 and h < 30) or (w < 75) or (h<10):
+        if (w < (wImg*0.03)) or (h < (hImg*0.02)):
             continue
         coordinates.append((x, y, w, h))
         cv2.rectangle(img2, (x, y), (x + w, y + h), (0, 0, 255), 1)
@@ -41,23 +42,37 @@ def recogniseTableFromImage(img_data, noise):
 
     a = 0
     b = 0
+    c = 0
     i = len(image_bin)
-    j = len(image_bin)
 
     while a == 0 or b == 0:
-        if (w < 150) or(i <= 100 or j <= 100):
+        if (w < 150) or(i <= 100):
             break
         i -= 1
-        j -= 1
-        if image_bin[i][75] == 255 and a == 0:
+        if image_bin[i][int(w*0.05)] == 255 and a == 0:
             a = len(image_bin) - i
-        if image_bin[j][w-75] == 255 and b == 0:
-            b = len(image_bin) - j
+        if image_bin[i][int(w*0.95)] == 255 and b == 0:
+            b = len(image_bin) - i
+        if image_bin[i][int(w*0.5)] == 255 and c == 0:
+            c = len(image_bin) - i
+        if (image_bin[i][int(w/2)] == 255) and a == 0 and b == 0: # if image is curved don't rotate
+            break
 
     rotated = image_bin
+    if a != 0 or b != 0:
+        if a > b:
+            if a > 3 * c and c > 3 * b:
+                b = c
+                a = a/2
+                print("a=c")
+        elif b > a:
+            if b > 3*c and c > 3*a:
+                a = c
+                b = b/2
+                print("b=c")
     if (a != 0 or b != 0) and abs(a-b) > 20:
         x1 = abs(a-b)
-        x2 = w-150
+        x2 = w-(w*0.1)
         x3 = sqrt(x1*x1+x2*x2)
         alpha = 360 - 2 * np.arctan((x1 * x1 - (x2 - x3) ** 2) / (x2 + x3) ** 2 - x1 ** 2)
         if b> a:
