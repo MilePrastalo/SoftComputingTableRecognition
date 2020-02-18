@@ -5,24 +5,25 @@ import numpy as np
 def parse_table(table_img):
     cv2.imwrite("table_img.jpg", table_img)
 
-    # hori_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_length, 1))
+    # Horizontal kernel of (kernel_length X 1), which will detect all the horizontal lines from the image.
     horizontal_size = np.array(table_img).shape[0] // 30
     print("H size: ", horizontal_size)
     horizontal_structure = cv2.getStructuringElement(cv2.MORPH_RECT, (horizontal_size, 1))
 
-    # A verticle kernel of (1 X kernel_length), which will detect all the verticle lines from the image.
+    # Vertical kernel of (1 X kernel_length), which will detect all the vertical lines from the image.
     vertical_size = np.array(table_img).shape[1] // 30
     print("V size: ", vertical_size)
     vertical_structure = cv2.getStructuringElement(cv2.MORPH_RECT, (1, vertical_size))
 
     # A kernel of (7 X 3) ones.
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (8, 4))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 3))
 
     # Morphological operation to detect vertical lines from an image
     img_temp1 = cv2.erode(table_img, vertical_structure, iterations=3)
     cv2.imwrite("img_templ.jpg", img_temp1)
-    verticle_lines_img = cv2.dilate(img_temp1, vertical_structure, iterations=3)
-    cv2.imwrite("verticle_lines.jpg", verticle_lines_img)
+    vertical_lines_img = cv2.dilate(img_temp1, vertical_structure, iterations=3)
+    cv2.imwrite("verticle_lines.jpg", vertical_lines_img)
+
     # Morphological operation to detect horizontal lines from an image
     img_temp2 = cv2.erode(table_img, horizontal_structure, iterations=3)
     horizontal_lines_img = cv2.dilate(img_temp2, horizontal_structure, iterations=6)
@@ -32,8 +33,8 @@ def parse_table(table_img):
     alpha = 0.5
     beta = 1.0 - alpha
     # This function helps to add two image with specific weight parameter
-    # to get a third image as summation of two image.
-    img_final_bin = cv2.addWeighted(verticle_lines_img, alpha, horizontal_lines_img, beta, 0.0)
+    # to get a third image as summation of two images.
+    img_final_bin = cv2.addWeighted(vertical_lines_img, alpha, horizontal_lines_img, beta, 0.0)
     cv2.imwrite("img_final_bin1.jpg", img_final_bin)
     img_final_bin = cv2.erode(~img_final_bin, kernel, iterations=4)
     cv2.imwrite("img_final_bin2.jpg", img_final_bin)
@@ -66,7 +67,6 @@ def parse_table(table_img):
 
         # Returns the location and width,height for every contour
         # If the box height is greater then 50 or height > average height - 7,
-        # width is >200, only then save it as a box in "cropped/" folder.
         x, y, w, h = cv2.boundingRect(c)
 
         if w > 200 and (h > 50 or h > average_h - 7):
@@ -77,7 +77,7 @@ def parse_table(table_img):
 
     matrix_copy = []
 
-    print("MATRICA")
+    print("MATRIX")
     for idx1, niz in enumerate(cropped_matrix):
         print('=== RED ===')
         matrix_copy.append([])
@@ -85,8 +85,8 @@ def parse_table(table_img):
             x, y, w, h = cv2.boundingRect(item)
             print(x, y, w, h)
             # Adds cropped images to positions of copied recreated table.
-            matrix_copy[idx1].append(table_img[y:y + h, x:x + w])
-            cv2.imwrite("cropped/" + str(idx1) + '___' + str(idx2) + '.png', table_img[y:y + h, x:x + w])
+            matrix_copy[idx1].append(table_img[y:y + h - 7, x:x + w])
+            cv2.imwrite("cropped/" + str(idx1) + '___' + str(idx2) + '.png', table_img[y:y + h - 7, x:x + w])
 
     return matrix_copy
 
