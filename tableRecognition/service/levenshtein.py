@@ -80,6 +80,8 @@ def get_number(s1):
                 s1 = s1[:i] + 'g' + s1[i + 1:]
             elif char == '%':
                 continue
+            elif char == ' ':
+                continue
             else:
                 s1 = s1[:i] + ',' + s1[i + 1:]
     return s1
@@ -94,7 +96,7 @@ def digit_count(text):
 
 
 def convert_to_real_word(text):
-    if text[0].isdigit():
+    if text[0].isdigit() and digit_count(text) > 1:
         return get_number(text)
     elif text[0] == 'o' or text[0] == 'O':
         if 2 <= len(text) <= 6 and digit_count(text) > 0:

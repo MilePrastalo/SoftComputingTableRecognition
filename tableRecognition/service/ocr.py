@@ -14,7 +14,7 @@ from sklearn.cluster import KMeans
 # prikaz vecih slika
 matplotlib.rcParams['figure.figsize'] = 16, 12
 
-alphabet = "QWERTYUIOPASDFGHJKLZXCVBNMŠĐČĆŽqwertyuiopasdfghjklzxcvbnmšđčćž%0123456789\,/<>"
+alphabet = "QWERTYUIOPASDFGHJKLZXCVBNMŠĐČĆŽqwertyuiopasdfghjklzxcvbnmšđčćž0123456789\,/<>"
 alphabet = [c for c in alphabet]
 
 def load_image(path):
@@ -158,7 +158,7 @@ def get_spaces(distances):
 def get_newline(distances):
     newlines = []
     for idx, space in enumerate(distances):
-        if space < 0 and abs(space) > 60:
+        if abs(space) > 40:
             newlines.append(idx)
     return newlines
 
@@ -216,24 +216,7 @@ def detect_serbian_letters(sorted_regions, img_bin):
             sorted_regions[i + flag] = [resize_region(region), (x, y, w, h)]
             # remove
             index_to_avoid.append(i)
-        elif ((i in hooks) and (
-                (sorted_regions[i][1][1] + sorted_regions[i][1][3]) >= sorted_regions[i - 1][1][1])):
-            # remove
-            index_to_avoid.append(i)
-        # procenat
-        elif ((i not in hooks) and
-              (sorted_regions[i][1][3] > 18) and (sorted_regions[i][1][3] < 28)):
-            y = sorted_regions[i + flag][1][1]
-            x = sorted_regions[i][1][0]
-            w = sorted_regions[i + flag][1][2] + (sorted_regions[i + flag][1][0] - sorted_regions[i][1][0])
-            if flag == -1:
-                x = sorted_regions[i + flag][1][0]
-                w = sorted_regions[i + flag][1][2] + (sorted_regions[i][1][0] + sorted_regions[i][1][2]) - (
-                        sorted_regions[i + flag][1][0] + sorted_regions[i + flag][1][2])
-            h = sorted_regions[i + flag][1][3]
-            region = img_bin[y:y + h + 1, x:x + w + 1]
-            sorted_regions[i + flag] = [resize_region(region), (x, y, w, h)]
-            index_to_avoid.append(i)
+
     sorted_regions = [reg for idx, reg in enumerate(sorted_regions) if idx not in index_to_avoid]
     return sorted_regions
 
@@ -256,7 +239,7 @@ def draw_regions(img, regions, img_name):
     for region in regions:
         cv2.rectangle(img, (region[1][0], region[1][1]), (region[1][0] + region[1][2], region[1][1] + region[1][3]),
                       (0, 255, 0), 2)
-    cv2.imwrite("C:/Users/Jelena Cuk/Desktop/SOFT/SoftComputingTableRecognition/tableRecognition/ocr_results/" + img_name, img)
+    cv2.imwrite("C:/Users/Jelena Cuk/Desktop/SOFT PROJEKAT/SoftComputingTableRecognition/tableRecognition/ocr_results/" + img_name, img)
 
 
 def train_nn(alphabet, regions, ann):
@@ -314,11 +297,13 @@ def get_text(filename):
     img_org = load_image(filename)
     img_gray = image_gray(img_org)
     img_bin = image_bin(img_gray)
-    #img_bin = invert(img_bin)
+    img_bin = invert(img_bin)
     #ret, img_bin = cv2.threshold(img_bin, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     regions, distances = select_roi_with_distances(img_org.copy(), img_bin, 100)
-    #regions = detect_serbian_letters(regions, img_bin)
+    regions = detect_serbian_letters(regions, img_bin)
     print('REGIONS = ' + str(len(regions)))
+    h = [region[1][3] for region in regions]
+    print('VISINE = ' + str(h))
     draw_regions(img_org, regions, 'VEZBA' + '.png')
     distances = calculate_distance(regions)
     print('DISTANCES = ' + str(distances))
@@ -343,7 +328,7 @@ def table_ocr(table):
                 # regions
                 regions, distances = select_roi_with_distances(column.copy(), img_bin, 60)
                 regions = detect_serbian_letters(regions, img_bin)
-                draw_regions(column, regions, 'regions_' + str(idx1+i) + '.png')
+                draw_regions(invert(column), regions, 'regions_' + str(idx1 + i) + '.png')
                 # calculate distances
                 distances = calculate_distance(regions)
                 res = ocr(ann, regions, alphabet, distances)
@@ -358,10 +343,10 @@ def table_ocr(table):
     return table_text, matrica
 
 
-#if __name__ == '__main__':
+if __name__ == '__main__':
 
-    #res = get_text("C:/Users/Jelena Cuk/Desktop/TEST SKUP/DVA_reda_BROJEVI.png")
-    #print(res)
+    res = get_text("C:/Users/Jelena Cuk/Desktop/SOFT PROJEKAT/SoftComputingTableRecognition/tableRecognition/ocr_results/train_arial.png")
+    print(res)
     #training()
 # ann = load_model_from_disk()
 # text = get_text(filename, ann, alphabet)
